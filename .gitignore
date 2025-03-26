@@ -1,0 +1,39 @@
+# === Catkin workspace build artifacts ===
+build/
+devel/
+install/
+log/
+
+# === ROS-specific stuff ===
+*.pyc
+*.pyo
+*.swp
+*.swo
+*.bak
+
+# === ROS launch/config stuff that might be generated ===
+*.launch~
+*.yaml~
+*.rviz~
+
+# === Catkin CMake cache ===
+CMakeLists.txt.user
+
+# === VSCode settings ===
+.vscode/
+
+# === CLion / JetBrains ===
+.idea/
+cmake-build-*/
+*.iml
+
+# === Python cache ===
+__pycache__/
+
+# === MacOS metadata ===
+.DS_Store
+
+# === Hidden system files ===
+Thumbs.db
+ehthumbs.db
+
