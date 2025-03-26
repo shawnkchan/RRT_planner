@@ -33,37 +33,37 @@ void RRTPlanner::mapCallback(const nav_msgs::OccupancyGrid::Ptr & msg)
   ROS_INFO("Map received");
   map_received_ = true;
 
-  // unpack map metadata
+  // unpack map metadata (width, height, res, origin)
   const nav_msgs::MapMetaData & map_info = msg->info;
   std::vector<int8_t> & map_data = msg->data;
   map_grid_ = msg;
-
-
+  RRTPlanner::buildMapImage();
 }
 
 void RRTPlanner::initPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr & msg)
 {
   // TODO: Fill out this function to receive and process the initial position
   init_pose_received_ = true;
-  const geometry_msgs::PoseWithCovarianceStamped & pose = msg->pose;
+  const geometry_msgs::PoseWithCovariance & pose = msg->pose;
   geometry_msgs::Point init_position = pose.pose.position;
-  init_pose_.x = init_position.x;
-  init_pose_.y = init_position.y;
+  init_pose_.x(init_position.x);
+  init_pose_.y(init_position.y);
 }
 
 void RRTPlanner::goalCallback(const geometry_msgs::PoseStamped::ConstPtr & msg)
 {
   // TODO: Fill out this function to receive and process the goal position
   goal_received_ = true;
-  const geometry_msgs::PoseStamped & pose = msg->pose;
-  geometry_msgs::Point goal_position = pose.pose.position;
-  goal_pose_.x = goal_position.x;
-  goal_pose_.y = goal_position.y;
+  const geometry_msgs::Pose & pose = msg->pose;
+  geometry_msgs::Point goal_position = pose.position;
+  goal_.x(goal_position.x);
+  goal_.y(goal_position.y);
 }
 
 void RRTPlanner::drawGoalInitPose()
 {
   // TODO: Fill out this function to draw current goal position on map
+  RRTPlanner::drawCircle(goal_, 5, cv::Scalar(0, 0, 255));
 }
 
 void RRTPlanner::plan()
@@ -87,6 +87,21 @@ bool RRTPlanner::isPointUnoccupied(const Point2D & p)
 void RRTPlanner::buildMapImage()
 {
   // TODO: Fill out this function to create a cv::Mat object from nav_msgs::OccupancyGrid message
+  int rows = map_grid_->info.height;
+  int cols = map_grid_->info.width;
+  map_ = std::unique_ptr<cv::Mat>(new cv::Mat(rows, cols, CV_8UC1));
+  ROS_INFO("Map before");
+  RRTPlanner::displayMapImage(0);
+  for (int x = 0; x < rows; x++) {
+    for (int y = 0; y < cols; y++) {
+      int index = RRTPlanner::toIndex(x, y);
+      map_->at<uchar>(x, y) = map_grid_->data[index];
+    }
+  }
+
+  ROS_INFO("Map after");
+  RRTPlanner::displayMapImage(0);
+
 }
 
 void RRTPlanner::displayMapImage(int delay)
