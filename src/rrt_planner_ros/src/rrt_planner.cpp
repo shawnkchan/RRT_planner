@@ -87,15 +87,14 @@ bool RRTPlanner::isPointUnoccupied(const Point2D & p)
 void RRTPlanner::buildMapImage()
 {
   // TODO: Fill out this function to create a cv::Mat object from nav_msgs::OccupancyGrid message
-  int rows = map_grid_->info.height;
-  int cols = map_grid_->info.width;
-  map_ = std::unique_ptr<cv::Mat>(new cv::Mat(rows, cols, CV_8UC1));
-  ROS_INFO("Map before");
-  RRTPlanner::displayMapImage(0);
-  for (int x = 0; x < rows; x++) {
-    for (int y = 0; y < cols; y++) {
+  int height = map_grid_->info.height;
+  int width = map_grid_->info.width;
+  map_ = std::unique_ptr<cv::Mat>(new cv::Mat(height, width, CV_8UC1));
+  for (int x = 0; x < height ; x++) {
+    for (int y = 0; y < width; y++) {
       int index = RRTPlanner::toIndex(x, y);
-      map_->at<uchar>(x, y) = map_grid_->data[index];
+      // mirror along the horizontal axis since occupancyGrid starts from top to bottom, left to right and mat is completely opposite
+      map_->at<uchar>(height - x - 1, y) = map_grid_->data[index];
     }
   }
 
