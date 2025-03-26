@@ -30,25 +30,35 @@ RRTPlanner::RRTPlanner(ros::NodeHandle * node)
 void RRTPlanner::mapCallback(const nav_msgs::OccupancyGrid::Ptr & msg)
 {
   // TODO: Fill out this function to receive and process the current map
-  ROS_INFO("Map callback called");
-  const nav_msgs::MapMetaData & map_info = msg->info;
-  const std_msgs::Header & map_header = msg->header;
+  ROS_INFO("Map received");
   map_received_ = true;
-  ROS_INFO_STREAM("Map width: " <<map_info.width);
-  ROS_INFO_STREAM("Map height: " <<map_info.height);
-  ROS_INFO_STREAM("Map load time: "<<map_info.map_load_time);
-  ROS_INFO_STREAM("Map header time: "<<map_header.stamp);
-  ROS_INFO_STREAM("Map size: " << msg->data.size());
+
+  // unpack map metadata
+  const nav_msgs::MapMetaData & map_info = msg->info;
+  std::vector<int8_t> & map_data = msg->data;
+  map_grid_ = msg;
+
+
 }
 
 void RRTPlanner::initPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr & msg)
 {
   // TODO: Fill out this function to receive and process the initial position
+  init_pose_received_ = true;
+  const geometry_msgs::PoseWithCovarianceStamped & pose = msg->pose;
+  geometry_msgs::Point init_position = pose.pose.position;
+  init_pose_.x = init_position.x;
+  init_pose_.y = init_position.y;
 }
 
 void RRTPlanner::goalCallback(const geometry_msgs::PoseStamped::ConstPtr & msg)
 {
   // TODO: Fill out this function to receive and process the goal position
+  goal_received_ = true;
+  const geometry_msgs::PoseStamped & pose = msg->pose;
+  geometry_msgs::Point goal_position = pose.pose.position;
+  goal_pose_.x = goal_position.x;
+  goal_pose_.y = goal_position.y;
 }
 
 void RRTPlanner::drawGoalInitPose()
