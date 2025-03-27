@@ -14,7 +14,6 @@
 
 namespace rrt_planner
 {
-
 /**
  * A utility class to represent a 2D point
  */
@@ -49,6 +48,72 @@ private:
   int y_;
 };
 
+/**
+* RRT Algorithm class
+RRT(start, goal, max_iterations, step_size):
+
+  tree = {start}
+
+  for i = 1 to max_iterations:
+
+    rand_point = sample_random_point()
+
+    nearest_node = find_nearest_node(tree, rand_point)
+
+    new_node = step_toward(nearest_node, rand_point, step_size)
+
+    if is_collision_free(nearest_node, new_node):
+      add new_node to tree with edge from nearest_node
+
+      if distance(new_node, goal) < threshold:
+        return extract_path(tree, start, new_node)
+
+  return failure (no path found)
+*/
+class RRTTree
+{
+public:
+  RRTTree(const Point2D& start, const Point2D& goal, int max_iterations, int step_size, int threshold_distance, nav_msgs::OccupancyGrid::ConstPtr& map_grid);
+
+private:
+  /**
+   * returns a random point in the state space
+   */
+  Point2D sample_random_point();
+
+   /**
+   * finds the nearest existing node in the tree
+   */
+  Point2D find_nearest_node_in_tree();
+
+  /**
+   * adds a new node starting from the nearest existing node in the direction of the random point,
+   * and at a distance of step_size away
+   */
+  Point2D grow_to_random_point();
+
+  /**
+   * checks if the new node is in an occupied spot or if the path taken collides with an occupied spot
+   */
+  bool isCollision();
+
+  /**
+   * collates all points along the path and returns as a nav_msgs::Path object
+   */
+  nav_msgs::Path extractPath();
+
+  /**
+* checks if the given point is occupied
+*/
+  bool isUnoccupied(const Point2D & p);
+
+  int threshold_distance_;
+  Point2D start_;
+  Point2D goal_;
+  int max_iterations_;
+  int step_size_;
+  nav_msgs::OccupancyGrid::ConstPtr map_grid_;
+};
 
 /**
  * Main class which implements the RRT algorithm
@@ -91,7 +156,6 @@ public:
   void goalCallback(const geometry_msgs::PoseStamped::ConstPtr &);
 
 private:
-
   /**
    * Publishes the path calculated by RRT as a nav_msgs::Path msg
    *

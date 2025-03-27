@@ -1,9 +1,56 @@
 #include "ros/ros.h"
 #include "rrt_planner/rrt_planner.h"
+#include <nav_msgs/Path.h>
 
 
 namespace rrt_planner
 {
+RRTTree::RRTTree(const Point2D& start, const Point2D& goal, int max_iterations, int step_size, int threshold_distance, nav_msgs::OccupancyGrid::ConstPtr& map_grid)
+: start_(start), goal_(goal), max_iterations_(max_iterations), step_size_(step_size), threshold_distance_(threshold_distance), map_grid_(map_grid)
+{}
+
+Point2D RRTTree::sample_random_point() {
+  int height = map_grid_->rows;
+  int width = map_grid_->cols;
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  // distribution object along height axis
+  std::uniform_int_distribution<> randomY(0, height - 1);
+  std::uniform_int_distribution<> randomX(0, width - 1);
+  // assign a random point in the map
+  Point2D random_point(randomX(gen), randomY(gen));
+  // check if the location is a wall
+  while (!isUnoccupied(random_point)) {
+    random_point.x(randomX(gen));
+    random_point.y(randomY(gen));
+  }
+  return random_point;
+}
+
+Point2D RRTTree::find_nearest_node_in_tree() {
+  return Point2D();
+}
+
+Point2D RRTTree::grow_to_random_point() {
+  return Point2D();
+}
+
+bool RRTTree::isCollision() {
+  return true;
+}
+/**
+nav_msgs::Path RRTTree::extractPath() {
+
+}
+**/
+
+bool isUnoccupied(const Point2D & p) {
+  //TODO: Share this logic with RRTPlanner?
+  int8_t map_grid_value = map_grid_->data[toIndex(p.x(), p.y())];
+  return map_grid_value == 0;
+}
+}
+
 
 RRTPlanner::RRTPlanner(ros::NodeHandle * node)
 : nh_(node),
@@ -37,11 +84,6 @@ void RRTPlanner::mapCallback(const nav_msgs::OccupancyGrid::Ptr & msg)
   const nav_msgs::MapMetaData & map_info = msg->info;
   std::vector<int8_t> & map_data = msg->data;
   map_grid_ = msg;
-
-//  std::set<int> unique_values(map_data.begin(), map_data.end());
-//  for (int val : unique_values) {
-//    ROS_INFO("%d", val);
-//  }
 }
 
 void RRTPlanner::initPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr & msg)
@@ -86,6 +128,8 @@ void RRTPlanner::plan()
         loop_rate.sleep();
     }
 }
+
+
 
 void RRTPlanner::publishPath()
 {
