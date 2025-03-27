@@ -37,16 +37,20 @@ void RRTPlanner::mapCallback(const nav_msgs::OccupancyGrid::Ptr & msg)
   const nav_msgs::MapMetaData & map_info = msg->info;
   std::vector<int8_t> & map_data = msg->data;
   map_grid_ = msg;
+
+//  std::set<int> unique_values(map_data.begin(), map_data.end());
+//  for (int val : unique_values) {
+//    ROS_INFO("%d", val);
+//  }
 }
 
 void RRTPlanner::initPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr & msg)
 {
   // TODO: Fill out this function to receive and process the initial position
   init_pose_received_ = true;
-  const geometry_msgs::PoseWithCovariance & pose = msg->pose;
-  geometry_msgs::Point init_position = pose.pose.position;
-  init_pose_.x(init_position.x);
-  init_pose_.y(init_position.y);
+  const geometry_msgs::PoseWithCovariance & poseWithCov = msg->pose;
+  const geometry_msgs::Pose pose = poseWithCov.pose;
+  poseToPoint(init_pose_, pose);
   ROS_INFO_STREAM("Init pose "<<init_pose_.x()<<","<<init_pose_.y());
 }
 
@@ -55,17 +59,15 @@ void RRTPlanner::goalCallback(const geometry_msgs::PoseStamped::ConstPtr & msg)
   // TODO: Fill out this function to receive and process the goal position
   goal_received_ = true;
   const geometry_msgs::Pose & pose = msg->pose;
-  geometry_msgs::Point goal_position = pose.position;
-  goal_.x(goal_position.x);
-  goal_.y(goal_position.y);
+  poseToPoint(goal_, pose);
   ROS_INFO_STREAM("Goal "<<goal_.x()<<","<<goal_.y());
 }
 
 void RRTPlanner::drawGoalInitPose()
 {
   // TODO: Fill out this function to draw current and goal position on map
-  drawCircle(goal_, 5, cv::Scalar(0, 0, 255));
-  drawCircle(init_pose_, 5, cv::Scalar(0, 0, 255));
+  drawCircle(goal_, 10, cv::Scalar(0, 0, 255));
+  drawCircle(init_pose_, 10, cv::Scalar(0, 255, 0));
 }
 
 void RRTPlanner::plan()
@@ -102,16 +104,24 @@ void RRTPlanner::buildMapImage()
   if (map_received_) {
     int height = map_grid_->info.height;
   	int width = map_grid_->info.width;
-  	map_ = std::unique_ptr<cv::Mat>(new cv::Mat(height, width, CV_8UC1));
+  	map_ = std::unique_ptr<cv::Mat>(new cv::Mat(height, width, CV_8UC3));
 	for (int x = 0; x < height ; x++) {
 		for (int y = 0; y < width; y++) {
   			int index = RRTPlanner::toIndex(x, y);
+            int8_t value = map_grid_->data[index];
+            cv::Vec3b pixel;
+            if (value == 0) {
+             pixel = cv::Vec3b(255, 255, 255);
+            } else {
+             pixel = cv::Vec3b(0, 0, 0);
+            }
   			// mirror along the horizontal axis since occupancyGrid starts from top to bottom, left to right and mat is completely opposite
-  			map_->at<uchar>(height - x - 1, y) = map_grid_->data[index];
+  			map_->at<cv::Vec3b>(height - x - 1, y) = pixel;
 		}
 	}
-    drawGoalInitPose();
+
   	ROS_INFO("Displaying map");
+    drawGoalInitPose();
   	displayMapImage(1);
   }
 }
@@ -154,6 +164,7 @@ inline geometry_msgs::PoseStamped RRTPlanner::pointToPose(const Point2D & p)
 
 inline void RRTPlanner::poseToPoint(Point2D & p, const geometry_msgs::Pose & pose)
 {
+  ROS_INFO("CALLING POSE TO POINT");
   p.x(pose.position.y / map_grid_->info.resolution);
   p.y(pose.position.x / map_grid_->info.resolution);
 }
