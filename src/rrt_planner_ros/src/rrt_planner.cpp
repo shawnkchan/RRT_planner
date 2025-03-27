@@ -18,9 +18,9 @@ RRTPlanner::RRTPlanner(ros::NodeHandle * node)
   // Subscribe to map topic
   map_sub_ = nh_->subscribe("map", 10, &RRTPlanner::mapCallback, this);
   // Subscribe to initial pose topic that is published by RViz
-  init_pose_sub_ = nh_->subscribe("init_pose", 10, &RRTPlanner::initPoseCallback, this);
+  init_pose_sub_ = nh_->subscribe("initialpose", 10, &RRTPlanner::initPoseCallback, this);
   // Subscribe to goal topic that is published by RViz
-  goal_sub_ = nh_->subscribe("goal", 10, &RRTPlanner::goalCallback, this);
+  goal_sub_ = nh_->subscribe("move_base_simple/goal", 10, &RRTPlanner::goalCallback, this);
   // Advertise topic where calculated path is going to be published
   path_pub_ = nh_->advertise<nav_msgs::Path>("path", 10);
   // This loops until the node is running, will exit when the node is killed
@@ -37,7 +37,6 @@ void RRTPlanner::mapCallback(const nav_msgs::OccupancyGrid::Ptr & msg)
   const nav_msgs::MapMetaData & map_info = msg->info;
   std::vector<int8_t> & map_data = msg->data;
   map_grid_ = msg;
-  RRTPlanner::buildMapImage();
 }
 
 void RRTPlanner::initPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr & msg)
@@ -48,6 +47,7 @@ void RRTPlanner::initPoseCallback(const geometry_msgs::PoseWithCovarianceStamped
   geometry_msgs::Point init_position = pose.pose.position;
   init_pose_.x(init_position.x);
   init_pose_.y(init_position.y);
+  ROS_INFO_STREAM("Init pose "<<init_pose_.x()<<","<<init_pose_.y());
 }
 
 void RRTPlanner::goalCallback(const geometry_msgs::PoseStamped::ConstPtr & msg)
@@ -58,18 +58,31 @@ void RRTPlanner::goalCallback(const geometry_msgs::PoseStamped::ConstPtr & msg)
   geometry_msgs::Point goal_position = pose.position;
   goal_.x(goal_position.x);
   goal_.y(goal_position.y);
+  ROS_INFO_STREAM("Goal "<<goal_.x()<<","<<goal_.y());
 }
 
 void RRTPlanner::drawGoalInitPose()
 {
-  // TODO: Fill out this function to draw current goal position on map
-  RRTPlanner::drawCircle(goal_, 5, cv::Scalar(0, 0, 255));
+  // TODO: Fill out this function to draw current and goal position on map
+  drawCircle(goal_, 5, cv::Scalar(0, 0, 255));
+  drawCircle(init_pose_, 5, cv::Scalar(0, 0, 255));
 }
 
 void RRTPlanner::plan()
 {
   // TODO: Fill out this function with the RRT algorithm logic to plan a collision-free
   //       path through the map starting from the initial pose and ending at the goal pose
+  ROS_INFO("Starting Planning");
+  ros::Rate loop_rate(10);
+  while (ros::ok())
+    {
+    	if (map_received_ && goal_received_ && init_pose_received_) {
+          	ROS_INFO("Map, goal, and init_pose received. Building map image");
+			buildMapImage();
+  		}
+    	ros::spinOnce();
+        loop_rate.sleep();
+    }
 }
 
 void RRTPlanner::publishPath()
@@ -80,27 +93,27 @@ void RRTPlanner::publishPath()
 bool RRTPlanner::isPointUnoccupied(const Point2D & p)
 {
   // TODO: Fill out this function to check if a given point is occupied/free in the map
-
-  return true;
+  return map_->at<uchar>(p.x(), p.y()) == 0;
 }
 
 void RRTPlanner::buildMapImage()
 {
   // TODO: Fill out this function to create a cv::Mat object from nav_msgs::OccupancyGrid message
-  int height = map_grid_->info.height;
-  int width = map_grid_->info.width;
-  map_ = std::unique_ptr<cv::Mat>(new cv::Mat(height, width, CV_8UC1));
-  for (int x = 0; x < height ; x++) {
-    for (int y = 0; y < width; y++) {
-      int index = RRTPlanner::toIndex(x, y);
-      // mirror along the horizontal axis since occupancyGrid starts from top to bottom, left to right and mat is completely opposite
-      map_->at<uchar>(height - x - 1, y) = map_grid_->data[index];
-    }
+  if (map_received_) {
+    int height = map_grid_->info.height;
+  	int width = map_grid_->info.width;
+  	map_ = std::unique_ptr<cv::Mat>(new cv::Mat(height, width, CV_8UC1));
+	for (int x = 0; x < height ; x++) {
+		for (int y = 0; y < width; y++) {
+  			int index = RRTPlanner::toIndex(x, y);
+  			// mirror along the horizontal axis since occupancyGrid starts from top to bottom, left to right and mat is completely opposite
+  			map_->at<uchar>(height - x - 1, y) = map_grid_->data[index];
+		}
+	}
+    drawGoalInitPose();
+  	ROS_INFO("Displaying map");
+  	displayMapImage(1);
   }
-
-  ROS_INFO("Map after");
-  RRTPlanner::displayMapImage(0);
-
 }
 
 void RRTPlanner::displayMapImage(int delay)
