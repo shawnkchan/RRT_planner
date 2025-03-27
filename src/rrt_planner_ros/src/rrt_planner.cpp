@@ -79,7 +79,7 @@ void RRTPlanner::plan()
   while (ros::ok())
     {
     	if (map_received_ && goal_received_ && init_pose_received_) {
-          	ROS_INFO("Map, goal, and init_pose received. Building map image");
+          	ROS_INFO("Displaying map");
 			buildMapImage();
   		}
     	ros::spinOnce();
@@ -95,7 +95,10 @@ void RRTPlanner::publishPath()
 bool RRTPlanner::isPointUnoccupied(const Point2D & p)
 {
   // TODO: Fill out this function to check if a given point is occupied/free in the map
-  return map_->at<uchar>(p.x(), p.y()) == 0;
+  // check the original map_grid_ object, 0 means unoccupied, 100 means occupied
+  // returns true if point is unoccupied, false otherwise
+  int8_t map_grid_value = map_grid_->data[toIndex(p.x(), p.y())];
+  return map_grid_value == 0;
 }
 
 void RRTPlanner::buildMapImage()
@@ -119,7 +122,6 @@ void RRTPlanner::buildMapImage()
   			map_->at<cv::Vec3b>(height - x - 1, y) = pixel;
 		}
 	}
-
   	ROS_INFO("Displaying map");
     drawGoalInitPose();
   	displayMapImage(1);
@@ -164,7 +166,6 @@ inline geometry_msgs::PoseStamped RRTPlanner::pointToPose(const Point2D & p)
 
 inline void RRTPlanner::poseToPoint(Point2D & p, const geometry_msgs::Pose & pose)
 {
-  ROS_INFO("CALLING POSE TO POINT");
   p.x(pose.position.y / map_grid_->info.resolution);
   p.y(pose.position.x / map_grid_->info.resolution);
 }
