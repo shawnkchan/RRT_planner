@@ -201,8 +201,8 @@ void RRTPlanner::createTree(int max_iterations, int step_size, int threshold_dis
     Node nearest_node = tree_[nearest_node_index];
     ROS_INFO_STREAM("Nearest node: "<< nearest_node.position().x() << "," << nearest_node.position().y());
     Point2D new_point = grow_to_random_point(nearest_node.position(), random_point, step_size);
-    // TODO: check if there are collisions before adding to tree
-    if (isPointUnoccupied(new_point)) {
+    // if the new point is in an unoccupied spot and if the path from nearest point to new point has no collisions, then add it to the tree
+    if (isPointUnoccupied(new_point) && isValidPath(nearest_node.position(), new_point)) {
       // make new_point into a node and add to tree
       Node new_node(new_point, nearest_node_index);
       tree_.push_back(new_node);
