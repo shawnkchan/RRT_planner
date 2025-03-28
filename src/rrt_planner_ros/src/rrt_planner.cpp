@@ -189,8 +189,8 @@ void RRTPlanner::createTree(int max_iterations, int step_size, int threshold_dis
   for (int i = 0; i < max_iterations; i++) {
     ROS_INFO("Creating a random point");
     Point2D random_point = sample_random_point();
-    Node random_node(random_point, 0);
-    tree_.push_back(random_node);
+    Node nearest_node = find_nearest_node_in_tree(random_point);
+    ROS_INFO_STREAM("Nearest node: "<< nearest_node.position().x() << "," << nearest_node.position().y());
   }
 }
 
