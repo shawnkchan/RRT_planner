@@ -61,8 +61,8 @@ void RRTPlanner::goalCallback(const geometry_msgs::PoseStamped::ConstPtr & msg)
 void RRTPlanner::drawGoalInitPose()
 {
   // TODO: Fill out this function to draw current and goal position on map
-  drawCircle(goal_, 10, cv::Scalar(0, 0, 255));
-  drawCircle(init_pose_, 10, cv::Scalar(0, 255, 0));
+  drawCircle(goal_, 5, cv::Scalar(0, 0, 255));
+  drawCircle(init_pose_, 5, cv::Scalar(0, 255, 0));
 }
 
 void RRTPlanner::plan()
@@ -70,15 +70,16 @@ void RRTPlanner::plan()
   // TODO: Fill out this function with the RRT algorithm logic to plan a collision-free
   //       path through the map starting from the initial pose and ending at the goal pose
   ROS_INFO("Starting Planning");
-  ros::Rate loop_rate(10);
+  ros::Rate loop_rate(5);
   bool planning_complete = false;
   while (ros::ok())
     {
     	if (map_received_ && goal_received_ && init_pose_received_) {
           	ROS_INFO("Displaying map");
+
 			buildMapImage();
             if (!planning_complete) {
-              createTree(5, 1, 1);
+              createTree(10, 20, 10);
               planning_complete = true;
             }
   		}
@@ -86,6 +87,13 @@ void RRTPlanner::plan()
     	ros::spinOnce();
         loop_rate.sleep();
     }
+//  if (map_received_ && init_pose_received_ && goal_received_) {
+//    while (ros::ok()) {
+//
+//      ros::spinOnce();
+//      loop_rate.sleep();
+//    }
+//  }
 }
 
 
@@ -189,8 +197,17 @@ void RRTPlanner::createTree(int max_iterations, int step_size, int threshold_dis
   for (int i = 0; i < max_iterations; i++) {
     ROS_INFO("Creating a random point");
     Point2D random_point = sample_random_point();
-    Node nearest_node = find_nearest_node_in_tree(random_point);
+    int nearest_node_index = find_nearest_node_index_in_tree(random_point);
+    Node nearest_node = tree_[nearest_node_index];
     ROS_INFO_STREAM("Nearest node: "<< nearest_node.position().x() << "," << nearest_node.position().y());
+    Point2D new_point = grow_to_random_point(nearest_node.position(), random_point, step_size);
+    // TODO: check if there are collisions before adding to tree
+    if (isPointUnoccupied(new_point)) {
+      // make new_point into a node and add to tree
+      Node new_node(new_point, nearest_node_index);
+      tree_.push_back(new_node);
+    }
+
   }
 }
 
@@ -199,7 +216,7 @@ void RRTPlanner::drawTreePoints()
   // skip the starting node, which is already drawn
   for (int i = 1; i < tree_.size(); i++) {
     ROS_INFO("Drawing a tree");
-    drawCircle(tree_[i].position(), 10, cv::Scalar(255, 0, 0));
+    drawCircle(tree_[i].position(), 5, cv::Scalar(255, 0, 0));
   }
 }
 
@@ -231,14 +248,15 @@ Point2D RRTPlanner::sample_random_point()
 * @param p_random: a randomly selected point in the state space
 * @return: returns a node in the tree that is closest to p_random
 */
-Node RRTPlanner::find_nearest_node_in_tree(Point2D p_random)
+int RRTPlanner::find_nearest_node_index_in_tree(Point2D p_random)
 {
    // if only the starting node exists in the tree, return the starting node
    if (tree_.size() == 1) {
-     return tree_[0];
+     return 0;
    }
    float shortest_distance = std::numeric_limits<float>::max();
-   Node closest_node;
+   int closest_node_index;
+   // check through all tree nodes and return which node is closest
    for (int i = 0; i < tree_.size(); i++) {
      Node existing_node = tree_[i];
      Point2D& existing_node_position = existing_node.position();
@@ -246,10 +264,10 @@ Node RRTPlanner::find_nearest_node_in_tree(Point2D p_random)
      float distance = euclideanDistance(existing_node_position, p_random);
      if (distance < shortest_distance) {
        shortest_distance = distance;
-       closest_node = tree_[i];
+       closest_node_index = i;
      }
    }
-   return closest_node;
+   return closest_node_index;
 }
 
 float RRTPlanner::euclideanDistance(Point2D p1, Point2D p2)
@@ -259,18 +277,41 @@ float RRTPlanner::euclideanDistance(Point2D p1, Point2D p2)
    return std::sqrt(dy * dy + dx * dx);
 }
 
-
 /**
  * adds a new, non-colliding node starting from the nearest existing node (p_nearest) in the direction of the random point,
  * and at a distance of step_size away
  */
-Point2D RRTPlanner::grow_to_random_point(Point2D p_nearest, Point2D p_random)
+Point2D RRTPlanner::grow_to_random_point(Point2D p_nearest, Point2D p_random, int step_size)
 {
-  return Point2D();
+  // NOTE: if dist(p_random, p_nearest) < step_size, then just place at p_random.
+  // p_random is guaranteed not to be a collision
+  float distance = euclideanDistance(p_nearest, p_random);
+  if (distance < step_size) {
+    return p_random;
+  }
+  float scale = step_size / distance;
+  int dx = p_random.x() - p_nearest.x();
+  int dy = p_random.y() - p_nearest.y();
+  int new_x = std::round(dx * scale + p_nearest.x());
+  int new_y = std::round(dy * scale + p_nearest.y());
+  ROS_INFO_STREAM("new point: "<< new_x << "," << new_y);
+  return Point2D(new_x, new_y);
 }
 
-bool RRTPlanner::isValidPath()
+bool RRTPlanner::isValidPath(Point2D p_nearest, Point2D p_new)
 {
+  int dx = p_new.x() - p_nearest.x();
+  int dy = p_new.y() - p_nearest.y();
+  int steps = std::max(std::abs(dx), std::abs(dy));
+  for (int i = 0; i < steps; i++) {
+    float t = float(i) / steps;
+    int x = std::round(p_nearest.x() + t * dx);
+    int y = std::round(p_nearest.y() + t * dy);
+    Point2D path_point(x, y);
+    if (!isPointUnoccupied(path_point)) {
+      return false;
+    }
+  }
   return true;
 }
 

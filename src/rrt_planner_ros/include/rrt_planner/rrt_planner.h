@@ -212,14 +212,16 @@ private:
   inline int toIndex(int, int);
 
   /**
-   * returns a random point in the state space
+   * returns a random point in the state space that is free
    */
   Point2D sample_random_point();
 
    /**
    * finds the nearest existing node in the tree to the given random point
+   * @param p_random: Point2D object of a random point in the C space
+   * @returns index position within the tree array of the nearest existing node
    */
-  Node find_nearest_node_in_tree(Point2D p_random);
+  int find_nearest_node_index_in_tree(Point2D p_random);
 
   /**
 * Utility function to compute euclidean distance betweeen two points
@@ -230,12 +232,12 @@ private:
    * adds a new node starting from the nearest existing node in the direction of the random point,
    * and at a distance of step_size away
    */
-  Point2D grow_to_random_point(Point2D p_nearest, Point2D p_random);
+  Point2D grow_to_random_point(Point2D p_nearest, Point2D p_random, int step_size);
 
   /**
    * checks if the new node is in an occupied spot or if the path taken collides with an occupied spot
    */
-  bool isValidPath();
+  bool isValidPath(Point2D p_nearest, Point2D p_new);
 
   /**
   * Uses the RRT algorithm to create a tree from start_ point to goal_ point
