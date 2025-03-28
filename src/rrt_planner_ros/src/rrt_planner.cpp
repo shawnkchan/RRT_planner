@@ -21,6 +21,7 @@ RRTPlanner::RRTPlanner(ros::NodeHandle * node)
   private_nh_.param("step_size", step_size_, 30);
   private_nh_.param("threshold_distance", threshold_distance_, 40);
   private_nh_.param("draw_tree_delay", draw_tree_delay_, 100);
+  private_nh_.param("enable_visualization", enable_visualization_, true);
   private_nh_.param<std::string>("map_topic", map_topic_, "/map");
   private_nh_.param<std::string>("init_pose_topic", init_pose_topic_, "/initialpose");
   private_nh_.param<std::string>("goal_topic", goal_topic_, "/move_base_simple/goal");
@@ -106,7 +107,6 @@ void RRTPlanner::publishPath()
 bool RRTPlanner::isPointUnoccupied(const Point2D & p)
 {
   // TODO: Fill out this function to check if a given point is occupied/free in the map
-  // check the original map_grid_ object, 0 means unoccupied, 100 means occupied
   // returns true if point is unoccupied, false otherwise
   int8_t map_grid_value = map_grid_->data[toIndex(p.x(), p.y())];
   return map_grid_value == 0;
@@ -196,7 +196,6 @@ void RRTPlanner::createTree(int max_iterations, int step_size, int threshold_dis
   tree_.push_back(start_node);
 
   for (int i = 0; i < max_iterations; i++) {
-    ROS_INFO("No path found yet");
     Point2D random_point = sample_random_point();
     int nearest_node_index = find_nearest_node_index_in_tree(random_point);
     Node nearest_node = tree_[nearest_node_index];
@@ -209,10 +208,11 @@ void RRTPlanner::createTree(int max_iterations, int step_size, int threshold_dis
 
       drawCircle(new_point, 5, cv::Scalar(255, 0, 0));
       drawLine(new_point, nearest_node.position(), cv::Scalar(255, 0, 0));
-      displayMapImage(100);
+      if (enable_visualization_) {
+        displayMapImage(100);
+      }
       // if the newly added point is within the threshold distance, then terminate
-      if (euclideanDistance(new_point, goal_) <= threshold_distance) {
-             ROS_INFO("Path to goal has been found");
+      if (euclideanDistance(new_point, goal_) <= threshold_distance && isValidPath(new_point, goal_)) {
              drawLine(new_point, goal_, cv::Scalar(255, 0, 0));
              displayMapImage(draw_tree_delay_);
              int current_index = tree_.size() - 1;
@@ -223,7 +223,11 @@ void RRTPlanner::createTree(int max_iterations, int step_size, int threshold_dis
              break;
       }
     }
-    ROS_INFO("Invalid point");
+  }
+  if (!path_found_) {
+    ROS_INFO("No valid path found");
+  } else {
+    ROS_INFO("Path found");
   }
 }
 
@@ -345,7 +349,6 @@ bool RRTPlanner::isValidPath(Point2D p_nearest, Point2D p_new)
 
 std::deque<int> RRTPlanner::getPathIndices(int current_index)
 {
-  ROS_INFO("Getting Path");
   std::deque<int> path;
 
   while (true) {
@@ -366,7 +369,6 @@ nav_msgs::Path RRTPlanner::getPath(std::deque<int> path_indices)
   std::vector<geometry_msgs::PoseStamped> poses;
 
   for (int i = 0; i < path_indices.size(); i++) {
-    ROS_INFO("index: %d", path_indices[i]);
     int tree_index = path_indices[i];
     Node node = tree_[tree_index];
     Point2D node_position = node.position();

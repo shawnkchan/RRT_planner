@@ -271,6 +271,7 @@ private:
   int step_size_;
   int threshold_distance_;
   int draw_tree_delay_;
+  bool enable_visualization_;
   std::string map_topic_;
   std::string init_pose_topic_;
   std::string goal_topic_;

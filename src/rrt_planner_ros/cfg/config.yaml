@@ -7,5 +7,6 @@ max_iterations: 2000
 step_size: 30
 threshold_distance: 40
 draw_tree_delay: 100
+enable_visualization: true
 
 # Add more parameters here to make the RRT algorithm tunable
