@@ -48,6 +48,10 @@ This will:
 
 Make sure your `map.yaml` file and corresponding image (JPG/PGM/PNG) are correctly placed under `cfg/`. The launch file will load it automatically.
 
+### 4. Restart the planner
+
+To run the planner again, kill the ROS Node and repeat steps 1 - 3
+
 ---
 
 ## Providing Start & Goal
@@ -77,10 +81,10 @@ enable_visualization: true
 ```
 
 You can adjust these values to influence the RRT behavior and visualization.
-- max_iterations: The number of iterations the algorithm runs for before termination
-- step_size: The maximum incremental distance that a new, random point is placed away from the nearest node in the existing tree
-- draw_tree_delay: The delay in milliseconds between each tree update during visualisation
-- enable_visualisation: Boolean that toggles whether each step of the RRT algorithm is shown when running. Setting to 'true' shows each step.
+- `max_iterations`: The number of iterations the algorithm runs for before termination
+- `step_size`: The maximum incremental distance that a new, random point is placed away from the nearest node in the existing tree
+- `draw_tree_delay`: The delay in milliseconds between each tree update during visualisation
+- `enable_visualisation`: Boolean that toggles whether each step of the RRT algorithm is shown when running. Setting to 'true' shows each step.
 
 ---
 
