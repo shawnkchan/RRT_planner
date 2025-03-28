@@ -2,6 +2,8 @@
 
 A Rapidly-exploring Random Tree (RRT) implementation in ROS1 for planning a collision-free path from a start position to a goal position in a 2D occupancy grid map.
 
+https://github.com/user-attachments/assets/eb80ca15-0f90-4ff4-afeb-7f2335a0f8b3
+
 ---
 
 ## Features
