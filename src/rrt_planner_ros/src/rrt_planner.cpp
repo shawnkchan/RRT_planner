@@ -10,8 +10,10 @@ RRTTree::RRTTree(const Point2D& start, const Point2D& goal, int max_iterations, 
 {}
 
 Point2D RRTTree::sample_random_point() {
-  int height = map_grid_->rows;
-  int width = map_grid_->cols;
+  nav_msgs::MapMetaData map_meta_data = map_grid_->info;
+
+  int height = map_meta_data.height;
+  int width = map_meta_data.width;
   std::random_device rd;
   std::mt19937 gen(rd());
   // distribution object along height axis
@@ -44,12 +46,18 @@ nav_msgs::Path RRTTree::extractPath() {
 }
 **/
 
-bool isUnoccupied(const Point2D & p) {
+bool RRTTree::isUnoccupied(const Point2D & p) {
   //TODO: Share this logic with RRTPlanner?
   int8_t map_grid_value = map_grid_->data[toIndex(p.x(), p.y())];
   return map_grid_value == 0;
 }
+
+inline int RRTTree::toIndex(int x, int y)
+{
+  return x * map_grid_->info.width + y;
 }
+
+
 
 
 RRTPlanner::RRTPlanner(ros::NodeHandle * node)

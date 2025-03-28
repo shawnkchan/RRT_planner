@@ -107,6 +107,11 @@ private:
 */
   bool isUnoccupied(const Point2D & p);
 
+  /**
+* Utility function
+*/
+  inline int toIndex(int x, int y);
+
   int threshold_distance_;
   Point2D start_;
   Point2D goal_;
