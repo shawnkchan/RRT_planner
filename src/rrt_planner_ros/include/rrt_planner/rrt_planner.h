@@ -245,9 +245,19 @@ private:
   void createTree(int max_iterations, int step_size, int threshold_distance);
 
   /**
-* Utility function to draw points from the Tree array
-*/
+  * Utility function to draw points from the Tree array
+  */
   void drawTreePoints();
+
+  /**
+* Utility function that returns a deque of indices detailing the path taken from the init_pose_ to end_node
+*/
+  std::deque<int> getPathIndices(int current_index);
+
+  /**
+* Utility function that takes deque of indices and converts them to a Path message
+*/
+  nav_msgs::Path getPath(std::deque<int> pathIndices);
 
   ros::NodeHandle * nh_;
   ros::NodeHandle private_nh_;
@@ -263,6 +273,7 @@ private:
   Point2D goal_;
 
   std::vector<Node> tree_;
+  nav_msgs::Path path_;
 
 
   ros::Subscriber map_sub_;

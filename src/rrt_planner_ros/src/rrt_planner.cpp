@@ -2,6 +2,7 @@
 #include "rrt_planner/rrt_planner.h"
 #include <nav_msgs/Path.h>
 #include <cmath>
+#include <deque>
 
 namespace rrt_planner
 {
@@ -77,7 +78,7 @@ void RRTPlanner::plan()
     	if (map_received_ && goal_received_ && init_pose_received_) {
 			buildMapImage();
             if (!planning_complete) {
-              createTree(2000, 30, 30);
+              createTree(2000, 30, 40);
               planning_complete = true;
             }
   		}
@@ -86,11 +87,10 @@ void RRTPlanner::plan()
     }
 }
 
-
-
 void RRTPlanner::publishPath()
 {
   // TODO: Fill nav_msgs::Path msg with the path calculated by RRT
+  path_pub_.publish(path_);
 }
 
 bool RRTPlanner::isPointUnoccupied(const Point2D & p)
@@ -190,18 +190,22 @@ void RRTPlanner::createTree(int max_iterations, int step_size, int threshold_dis
     Point2D new_point = grow_to_random_point(nearest_node.position(), random_point, step_size);
     // if the new point is in an unoccupied spot and if the path from nearest point to new point has no collisions, then add it to the tree
     if (isPointUnoccupied(new_point) && isValidPath(nearest_node.position(), new_point)) {
-      // make new_point into a node and add to tree
+      // make new_point into a node and add to tree array
       Node new_node(new_point, nearest_node_index);
       tree_.push_back(new_node);
 
       drawCircle(new_point, 5, cv::Scalar(255, 0, 0));
       drawLine(new_point, nearest_node.position(), cv::Scalar(255, 0, 0));
       displayMapImage(100);
-
-      ROS_INFO_STREAM("new point and goal dist: "<< euclideanDistance(new_point, goal_));
-      ROS_INFO_STREAM("threshold distance: "<< threshold_distance);
+      // if the newly added point is within the threshold distance, then terminate
       if (euclideanDistance(new_point, goal_) <= threshold_distance) {
              ROS_INFO("Path to goal has been found");
+             drawLine(new_point, goal_, cv::Scalar(255, 0, 0));
+             displayMapImage(100);
+             int current_index = tree_.size() - 1;
+             std::deque<int> pathIndices = getPathIndices(current_index);
+             path_ = getPath(pathIndices);
+             publishPath();
              break;
       }
     }
@@ -214,6 +218,9 @@ void RRTPlanner::drawTreePoints()
   // skip the starting node, which is already drawn
   for (int i = 1; i < tree_.size(); i++) {
     drawCircle(tree_[i].position(), 5, cv::Scalar(255, 0, 0));
+    int parent_index = tree_[i].parent_index();
+    Node parent_node = tree_[parent_index];
+    drawLine(tree_[i].position(), parent_node.position(), cv::Scalar(255, 0, 0));
   }
 }
 
@@ -308,6 +315,43 @@ bool RRTPlanner::isValidPath(Point2D p_nearest, Point2D p_new)
     }
   }
   return true;
+}
+
+std::deque<int> RRTPlanner::getPathIndices(int current_index)
+{
+  ROS_INFO("Getting Path");
+  std::deque<int> path;
+
+  while (true) {
+    path.push_front(current_index);
+    Node current_node = tree_[current_index];
+    int parent_node_index = current_node.parent_index();
+    if (parent_node_index == current_index) {
+      break;
+    }
+    current_index = parent_node_index;
+  }
+  return path;
+}
+
+nav_msgs::Path RRTPlanner::getPath(std::deque<int> path_indices)
+{
+  nav_msgs::Path path;
+  std::vector<geometry_msgs::PoseStamped> poses;
+
+  for (int i = 0; i < path_indices.size(); i++) {
+    ROS_INFO("index: %d", path_indices[i]);
+    int tree_index = path_indices[i];
+    Node node = tree_[tree_index];
+    Point2D node_position = node.position();
+    geometry_msgs::PoseStamped node_pose = pointToPose(node_position);
+    poses.push_back(node_pose);
+  }
+  poses.push_back(pointToPose(goal_));
+  path.header.stamp = ros::Time::now();
+  path.header.frame_id = "map";
+  path.poses = poses;
+  return path;
 }
 
 }  // namespace rrt_planner
