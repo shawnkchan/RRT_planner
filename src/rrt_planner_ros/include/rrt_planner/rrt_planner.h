@@ -49,6 +49,35 @@ private:
 };
 
 /**
+* Utility class representing a node in the RRT Tree
+*/
+
+class Node
+{
+public:
+  Node(const Point2D& position, int parent_index): position_(position), parent_index_(parent_index) {}
+
+  Point2D position() const
+  {
+    return position_;
+  }
+
+  int parent_index()
+  {
+    return parent_index_;
+  }
+
+  void set_parent_index(int parent_index)
+  {
+    parent_index_ = parent_index;
+  }
+
+private:
+  Point2D position_;
+  int parent_index_;
+};
+
+/**
 * RRT Algorithm class
 RRT(start, goal, max_iterations, step_size):
 
@@ -70,84 +99,6 @@ RRT(start, goal, max_iterations, step_size):
 
   return failure (no path found)
 */
-class RRTTree
-{
-public:
-  RRTTree(const Point2D& start, const Point2D& goal, int max_iterations, int step_size, int threshold_distance, nav_msgs::OccupancyGrid::ConstPtr& map_grid);
-
-  /**
-   * collates all points along the path and returns as a nav_msgs::Path object
-   */
-  nav_msgs::Path extractPath();
-
-  /**
-  * Uses the RRT algorithm to create a tree from start_ point to goal_ point
-  */
-  void createTree();
-
-private:
-  class Node {
-    public:
-      Node(const Point2D& position, int parent_index): position_(position), parent_index_(parent_index) {}
-
-      Point2D position() const
-      {
-        return position_;
-      }
-
-      int parent_index()
-      {
-        return parent_index_;
-      }
-
-      void set_parent_index(int parent_index)
-      {
-        parent_index_ = parent_index;
-      }
-
-    private:
-      Point2D position_;
-      int parent_index_;
-    };
-  /**
-   * returns a random point in the state space
-   */
-  Point2D sample_random_point();
-
-   /**
-   * finds the nearest existing node in the tree to the given random point
-   */
-  Point2D find_nearest_node_in_tree(Point2D p_random);
-
-  /**
-   * adds a new node starting from the nearest existing node in the direction of the random point,
-   * and at a distance of step_size away
-   */
-  Point2D grow_to_random_point(Point2D p_nearest, Point2D p_random);
-
-  /**
-   * checks if the new node is in an occupied spot or if the path taken collides with an occupied spot
-   */
-  bool isCollision();
-
-  /**
-* checks if the given point is occupied
-*/
-  bool isUnoccupied(const Point2D & p);
-
-  /**
-* Utility function
-*/
-  inline int toIndex(int x, int y);
-
-  int threshold_distance_;
-  Point2D start_;
-  Point2D goal_;
-  int max_iterations_;
-  int step_size_;
-  nav_msgs::OccupancyGrid::ConstPtr map_grid_;
-  std::vector<Node> tree_;
-};
 
 /**
  * Main class which implements the RRT algorithm
@@ -259,6 +210,32 @@ private:
    */
   inline int toIndex(int, int);
 
+  /**
+   * returns a random point in the state space
+   */
+  Point2D sample_random_point();
+
+   /**
+   * finds the nearest existing node in the tree to the given random point
+   */
+  Point2D find_nearest_node_in_tree(Point2D p_random);
+
+  /**
+   * adds a new node starting from the nearest existing node in the direction of the random point,
+   * and at a distance of step_size away
+   */
+  Point2D grow_to_random_point(Point2D p_nearest, Point2D p_random);
+
+  /**
+   * checks if the new node is in an occupied spot or if the path taken collides with an occupied spot
+   */
+  bool isValidPath();
+
+  /**
+  * Uses the RRT algorithm to create a tree from start_ point to goal_ point
+  */
+  void createTree(int max_iterations, int step_size, int threshold_distance);
+
   ros::NodeHandle * nh_;
   ros::NodeHandle private_nh_;
 
@@ -271,6 +248,9 @@ private:
 
   bool goal_received_;
   Point2D goal_;
+
+  std::vector<Node> tree_;
+
 
   ros::Subscriber map_sub_;
   ros::Subscriber init_pose_sub_;

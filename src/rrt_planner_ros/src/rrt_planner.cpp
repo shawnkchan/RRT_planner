@@ -5,72 +5,6 @@
 
 namespace rrt_planner
 {
-RRTTree::RRTTree(const Point2D& start, const Point2D& goal, int max_iterations, int step_size, int threshold_distance, nav_msgs::OccupancyGrid::ConstPtr& map_grid)
-: start_(start), goal_(goal), max_iterations_(max_iterations), step_size_(step_size), threshold_distance_(threshold_distance), map_grid_(map_grid)
-{}
-
-Point2D RRTTree::sample_random_point() {
-  nav_msgs::MapMetaData map_meta_data = map_grid_->info;
-
-  int height = map_meta_data.height;
-  int width = map_meta_data.width;
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  // distribution object along height axis
-  std::uniform_int_distribution<> randomY(0, height - 1);
-  std::uniform_int_distribution<> randomX(0, width - 1);
-  // assign a random point in the map
-  Point2D random_point(randomX(gen), randomY(gen));
-  // check if the location is a wall
-  while (!isUnoccupied(random_point)) {
-    random_point.x(randomX(gen));
-    random_point.y(randomY(gen));
-  }
-  return random_point;
-}
-
-Point2D RRTTree::find_nearest_node_in_tree(Point2D p_random) {
-  return Point2D();
-}
-
-Point2D RRTTree::grow_to_random_point(Point2D p_nearest, Point2D p_random) {
-  return Point2D();
-}
-
-bool RRTTree::isCollision() {
-  return true;
-}
-/**
-nav_msgs::Path RRTTree::extractPath() {
-
-}
-**/
-
-bool RRTTree::isUnoccupied(const Point2D & p) {
-  //TODO: Share this logic with RRTPlanner?
-  int8_t map_grid_value = map_grid_->data[toIndex(p.x(), p.y())];
-  return map_grid_value == 0;
-}
-
-inline int RRTTree::toIndex(int x, int y)
-{
-  return x * map_grid_->info.width + y;
-}
-
-void RRTTree::createTree() {
-  // create and add the starting node in the empty tree
-  Node start_node(start_, 0);
-  tree_.push_back(start_node);
-
-  for (int i; i < max_iterations_; i++) {
-    Point2D random_point = sample_random_point();
-  }
-
-}
-
-
-
-
 RRTPlanner::RRTPlanner(ros::NodeHandle * node)
 : nh_(node),
   private_nh_("~"),
@@ -236,6 +170,54 @@ inline void RRTPlanner::poseToPoint(Point2D & p, const geometry_msgs::Pose & pos
 inline int RRTPlanner::toIndex(int x, int y)
 {
   return x * map_grid_->info.width + y;
+}
+
+void RRTPlanner::createTree(int max_iterations, int step_size, int threshold_distance)
+{
+  // create and add the starting node in the empty tree
+  //TODO: should we use pose or point
+  Node start_node(init_pose_, 0);
+  tree_.push_back(start_node);
+
+  for (int i; i < max_iterations; i++) {
+    Point2D random_point = sample_random_point();
+  }
+}
+
+Point2D RRTPlanner::sample_random_point()
+{
+  nav_msgs::MapMetaData map_meta_data = map_grid_->info;
+
+  int height = map_meta_data.height;
+  int width = map_meta_data.width;
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  // distribution object along height axis
+  std::uniform_int_distribution<> randomY(0, height - 1);
+  std::uniform_int_distribution<> randomX(0, width - 1);
+  // assign a random point in the map
+  Point2D random_point(randomX(gen), randomY(gen));
+  // check if the location is a wall
+  while (!isPointUnoccupied(random_point)) {
+    random_point.x(randomX(gen));
+    random_point.y(randomY(gen));
+  }
+  return random_point;
+}
+
+Point2D RRTPlanner::find_nearest_node_in_tree(Point2D p_random)
+{
+  return Point2D();
+}
+
+Point2D RRTPlanner::grow_to_random_point(Point2D p_nearest, Point2D p_random)
+{
+  return Point2D();
+}
+
+bool RRTPlanner::isValidPath()
+{
+  return true;
 }
 
 }  // namespace rrt_planner
