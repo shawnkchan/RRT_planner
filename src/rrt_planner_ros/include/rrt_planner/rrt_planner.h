@@ -55,6 +55,7 @@ private:
 class Node
 {
 public:
+  Node(): position_(Point2D()), parent_index_(0) {}
   Node(Point2D& position, int parent_index): position_(position), parent_index_(parent_index) {}
 
   Point2D& position()
@@ -89,7 +90,7 @@ RRT(start, goal, max_iterations, step_size):
 
     nearest_node = find_nearest_node(tree, rand_point)
 
-    new_node = step_toward(nearest_node, rand_point, step_size)
+    new_node = grow_to_random_point(nearest_node, rand_point, step_size)
 
     if is_collision_free(nearest_node, new_node):
       add new_node to tree with edge from nearest_node
@@ -218,7 +219,12 @@ private:
    /**
    * finds the nearest existing node in the tree to the given random point
    */
-  Point2D find_nearest_node_in_tree(Point2D p_random);
+  Node find_nearest_node_in_tree(Point2D p_random);
+
+  /**
+* Utility function to compute euclidean distance betweeen two points
+*/
+  float euclideanDistance(Point2D p1, Point2D p2);
 
   /**
    * adds a new node starting from the nearest existing node in the direction of the random point,

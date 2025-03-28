@@ -1,7 +1,7 @@
 #include "ros/ros.h"
 #include "rrt_planner/rrt_planner.h"
 #include <nav_msgs/Path.h>
-
+#include <cmath>
 
 namespace rrt_planner
 {
@@ -71,15 +71,15 @@ void RRTPlanner::plan()
   //       path through the map starting from the initial pose and ending at the goal pose
   ROS_INFO("Starting Planning");
   ros::Rate loop_rate(10);
-  bool start_planning = false;
+  bool planning_complete = false;
   while (ros::ok())
     {
     	if (map_received_ && goal_received_ && init_pose_received_) {
           	ROS_INFO("Displaying map");
 			buildMapImage();
-            if (!start_planning) {
-              createTree(1, 1, 1);
-              start_planning = true;
+            if (!planning_complete) {
+              createTree(5, 1, 1);
+              planning_complete = true;
             }
   		}
 
@@ -187,7 +187,7 @@ void RRTPlanner::createTree(int max_iterations, int step_size, int threshold_dis
   tree_.push_back(start_node);
 
   for (int i = 0; i < max_iterations; i++) {
-    ROS_INFO("Adding a random point");
+    ROS_INFO("Creating a random point");
     Point2D random_point = sample_random_point();
     Node random_node(random_point, 0);
     tree_.push_back(random_node);
@@ -226,11 +226,44 @@ Point2D RRTPlanner::sample_random_point()
   return random_point;
 }
 
-Point2D RRTPlanner::find_nearest_node_in_tree(Point2D p_random)
+/**
+* finds the nearest existing node in the tree to the given random point (shortest euclidean distance)
+* @param p_random: a randomly selected point in the state space
+* @return: returns a node in the tree that is closest to p_random
+*/
+Node RRTPlanner::find_nearest_node_in_tree(Point2D p_random)
 {
-  return Point2D();
+   // if only the starting node exists in the tree, return the starting node
+   if (tree_.size() == 1) {
+     return tree_[0];
+   }
+   float shortest_distance = std::numeric_limits<float>::max();
+   Node closest_node;
+   for (int i = 0; i < tree_.size(); i++) {
+     Node existing_node = tree_[i];
+     Point2D& existing_node_position = existing_node.position();
+
+     float distance = euclideanDistance(existing_node_position, p_random);
+     if (distance < shortest_distance) {
+       shortest_distance = distance;
+       closest_node = tree_[i];
+     }
+   }
+   return closest_node;
 }
 
+float RRTPlanner::euclideanDistance(Point2D p1, Point2D p2)
+{
+   float dy = p1.y() - p2.y();
+   float dx = p1.x() - p2.x();
+   return std::sqrt(dy * dy + dx * dx);
+}
+
+
+/**
+ * adds a new, non-colliding node starting from the nearest existing node (p_nearest) in the direction of the random point,
+ * and at a distance of step_size away
+ */
 Point2D RRTPlanner::grow_to_random_point(Point2D p_nearest, Point2D p_random)
 {
   return Point2D();
