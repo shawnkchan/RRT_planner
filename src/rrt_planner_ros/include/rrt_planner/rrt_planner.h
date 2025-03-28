@@ -250,6 +250,11 @@ private:
   void drawTreePoints();
 
   /**
+  * Utility function to draw points from the Path indices array
+  */
+  void drawPathPoints();
+
+  /**
 * Utility function that returns a deque of indices detailing the path taken from the init_pose_ to end_node
 */
   std::deque<int> getPathIndices(int current_index);
@@ -274,6 +279,8 @@ private:
 
   std::vector<Node> tree_;
   nav_msgs::Path path_;
+  std::deque<int> path_indices_;
+  bool path_found_;
 
 
   ros::Subscriber map_sub_;

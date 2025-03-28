@@ -11,7 +11,8 @@ RRTPlanner::RRTPlanner(ros::NodeHandle * node)
   private_nh_("~"),
   map_received_(false),
   init_pose_received_(false),
-  goal_received_(false)
+  goal_received_(false),
+  path_found_(false)
 {
 
   // TODO: Fill out this function to:
@@ -125,6 +126,9 @@ void RRTPlanner::buildMapImage()
 	}
     drawGoalInitPose();
     drawTreePoints();
+    if (path_found_) {
+      drawPathPoints();
+    }
   	displayMapImage(1);
   }
 }
@@ -203,9 +207,10 @@ void RRTPlanner::createTree(int max_iterations, int step_size, int threshold_dis
              drawLine(new_point, goal_, cv::Scalar(255, 0, 0));
              displayMapImage(100);
              int current_index = tree_.size() - 1;
-             std::deque<int> pathIndices = getPathIndices(current_index);
-             path_ = getPath(pathIndices);
+             path_indices_ = getPathIndices(current_index);
+             path_ = getPath(path_indices_);
              publishPath();
+             path_found_ = true;
              break;
       }
     }
@@ -222,6 +227,18 @@ void RRTPlanner::drawTreePoints()
     Node parent_node = tree_[parent_index];
     drawLine(tree_[i].position(), parent_node.position(), cv::Scalar(255, 0, 0));
   }
+}
+
+void RRTPlanner::drawPathPoints()
+{
+  for (int i = 1; i < path_indices_.size(); i++) {
+    int tree_index = path_indices_[i];
+    drawCircle(tree_[tree_index].position(), 5, cv::Scalar(0, 165, 255));
+    int parent_index = tree_[tree_index].parent_index();
+    Node parent_node = tree_[parent_index];
+    drawLine(tree_[tree_index].position(), parent_node.position(), cv::Scalar(0, 165, 255));
+  }
+  drawLine(tree_[tree_.size() - 1].position(), goal_, cv::Scalar(0, 165, 255));
 }
 
 
@@ -353,5 +370,7 @@ nav_msgs::Path RRTPlanner::getPath(std::deque<int> path_indices)
   path.poses = poses;
   return path;
 }
+
+
 
 }  // namespace rrt_planner
