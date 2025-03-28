@@ -71,12 +71,18 @@ void RRTPlanner::plan()
   //       path through the map starting from the initial pose and ending at the goal pose
   ROS_INFO("Starting Planning");
   ros::Rate loop_rate(10);
+  bool start_planning = false;
   while (ros::ok())
     {
     	if (map_received_ && goal_received_ && init_pose_received_) {
           	ROS_INFO("Displaying map");
 			buildMapImage();
+            if (!start_planning) {
+              createTree(1, 1, 1);
+              start_planning = true;
+            }
   		}
+
     	ros::spinOnce();
         loop_rate.sleep();
     }
@@ -121,6 +127,7 @@ void RRTPlanner::buildMapImage()
 	}
   	ROS_INFO("Displaying map");
     drawGoalInitPose();
+    drawTreePoints();
   	displayMapImage(1);
   }
 }
@@ -174,15 +181,28 @@ inline int RRTPlanner::toIndex(int x, int y)
 
 void RRTPlanner::createTree(int max_iterations, int step_size, int threshold_distance)
 {
+  ROS_INFO("Creating tree");
   // create and add the starting node in the empty tree
-  //TODO: should we use pose or point
   Node start_node(init_pose_, 0);
   tree_.push_back(start_node);
 
-  for (int i; i < max_iterations; i++) {
+  for (int i = 0; i < max_iterations; i++) {
+    ROS_INFO("Adding a random point");
     Point2D random_point = sample_random_point();
+    Node random_node(random_point, 0);
+    tree_.push_back(random_node);
   }
 }
+
+void RRTPlanner::drawTreePoints()
+{
+  // skip the starting node, which is already drawn
+  for (int i = 1; i < tree_.size(); i++) {
+    ROS_INFO("Drawing a tree");
+    drawCircle(tree_[i].position(), 10, cv::Scalar(255, 0, 0));
+  }
+}
+
 
 Point2D RRTPlanner::sample_random_point()
 {
@@ -202,6 +222,7 @@ Point2D RRTPlanner::sample_random_point()
     random_point.x(randomX(gen));
     random_point.y(randomY(gen));
   }
+  ROS_INFO_STREAM("random point: "<< random_point.x() << "," << random_point.y());
   return random_point;
 }
 

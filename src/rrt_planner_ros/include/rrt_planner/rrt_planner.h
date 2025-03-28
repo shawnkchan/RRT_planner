@@ -55,9 +55,9 @@ private:
 class Node
 {
 public:
-  Node(const Point2D& position, int parent_index): position_(position), parent_index_(parent_index) {}
+  Node(Point2D& position, int parent_index): position_(position), parent_index_(parent_index) {}
 
-  Point2D position() const
+  Point2D& position()
   {
     return position_;
   }
@@ -235,6 +235,11 @@ private:
   * Uses the RRT algorithm to create a tree from start_ point to goal_ point
   */
   void createTree(int max_iterations, int step_size, int threshold_distance);
+
+  /**
+* Utility function to draw points from the Tree array
+*/
+  void drawTreePoints();
 
   ros::NodeHandle * nh_;
   ros::NodeHandle private_nh_;
