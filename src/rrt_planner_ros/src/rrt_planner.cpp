@@ -29,11 +29,11 @@ Point2D RRTTree::sample_random_point() {
   return random_point;
 }
 
-Point2D RRTTree::find_nearest_node_in_tree() {
+Point2D RRTTree::find_nearest_node_in_tree(Point2D p_random) {
   return Point2D();
 }
 
-Point2D RRTTree::grow_to_random_point() {
+Point2D RRTTree::grow_to_random_point(Point2D p_nearest, Point2D p_random) {
   return Point2D();
 }
 
@@ -55,6 +55,17 @@ bool RRTTree::isUnoccupied(const Point2D & p) {
 inline int RRTTree::toIndex(int x, int y)
 {
   return x * map_grid_->info.width + y;
+}
+
+void RRTTree::createTree() {
+  // create and add the starting node in the empty tree
+  Node start_node(start_, 0);
+  tree_.push_back(start_node);
+
+  for (int i; i < max_iterations_; i++) {
+    Point2D random_point = sample_random_point();
+  }
+
 }
 
 
