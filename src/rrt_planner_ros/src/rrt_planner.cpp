@@ -77,7 +77,7 @@ void RRTPlanner::plan()
     	if (map_received_ && goal_received_ && init_pose_received_) {
 			buildMapImage();
             if (!planning_complete) {
-              createTree(500, 20, 20);
+              createTree(2000, 30, 30);
               planning_complete = true;
             }
   		}
@@ -195,6 +195,7 @@ void RRTPlanner::createTree(int max_iterations, int step_size, int threshold_dis
       tree_.push_back(new_node);
 
       drawCircle(new_point, 5, cv::Scalar(255, 0, 0));
+      drawLine(new_point, nearest_node.position(), cv::Scalar(255, 0, 0));
       displayMapImage(100);
 
       ROS_INFO_STREAM("new point and goal dist: "<< euclideanDistance(new_point, goal_));
