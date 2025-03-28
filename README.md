@@ -46,7 +46,7 @@ This will:
 
 ### 3. Provide Map File
 
-Make sure your `map.yaml` file and corresponding image (PGM/PNG) are correctly placed under `cfg/`. The launch file will load it automatically.
+Make sure your `map.yaml` file and corresponding image (JPG/PGM/PNG) are correctly placed under `cfg/`. The launch file will load it automatically.
 
 ---
 
@@ -77,13 +77,17 @@ enable_visualization: true
 ```
 
 You can adjust these values to influence the RRT behavior and visualization.
+- max_iterations: The number of iterations the algorithm runs for before termination
+- step_size: The maximum incremental distance that a new, random point is placed away from the nearest node in the existing tree
+- draw_tree_delay: The delay in milliseconds between each tree update during visualisation
+- enable_visualisation: Boolean that toggles whether each step of the RRT algorithm is shown when running. Setting to 'true' shows each step.
 
 ---
 
 ## Visualization
 
 - If `enable_visualization: true`, tree growth and path are shown in an OpenCV window.
-- Tree is drawn in **blue**, path in **orange**, goal in **red**, start in **green**.
+- Tree is drawn in **blue**, path from start to goal in **orange**, goal in **red**, start in **green**.
 
 ---
 
