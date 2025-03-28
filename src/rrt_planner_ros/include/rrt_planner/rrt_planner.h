@@ -255,14 +255,26 @@ private:
   void drawPathPoints();
 
   /**
-* Utility function that returns a deque of indices detailing the path taken from the init_pose_ to end_node
-*/
+  * Utility function that returns a deque of indices detailing the path taken from the init_pose_ to end_node
+  */
   std::deque<int> getPathIndices(int current_index);
 
   /**
-* Utility function that takes deque of indices and converts them to a Path message
-*/
+  * Utility function that takes deque of indices and converts them to a Path message
+  */
   nav_msgs::Path getPath(std::deque<int> pathIndices);
+
+  /**
+  * ROS parameters
+  */
+  int max_iterations_;
+  int step_size_;
+  int threshold_distance_;
+  int draw_tree_delay_;
+  std::string map_topic_;
+  std::string init_pose_topic_;
+  std::string goal_topic_;
+  std::string path_topic_;
 
   ros::NodeHandle * nh_;
   ros::NodeHandle private_nh_;
@@ -281,7 +293,6 @@ private:
   nav_msgs::Path path_;
   std::deque<int> path_indices_;
   bool path_found_;
-
 
   ros::Subscriber map_sub_;
   ros::Subscriber init_pose_sub_;

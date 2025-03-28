@@ -1,4 +1,11 @@
-map_topic: '/map'
-path_topic: '/path'
+map_topic: "/map"
+init_pose_topic: "/initialpose"
+goal_topic: "/move_base_simple/goal"
+path_topic: "/path"
+
+max_iterations: 2000
+step_size: 30
+threshold_distance: 40
+draw_tree_delay: 100
 
 # Add more parameters here to make the RRT algorithm tunable

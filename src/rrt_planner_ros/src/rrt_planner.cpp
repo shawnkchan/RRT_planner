@@ -17,14 +17,23 @@ RRTPlanner::RRTPlanner(ros::NodeHandle * node)
 
   // TODO: Fill out this function to:
   // Get map and path topics from parameter server
+  private_nh_.param("max_iterations", max_iterations_, 2000);
+  private_nh_.param("step_size", step_size_, 30);
+  private_nh_.param("threshold_distance", threshold_distance_, 40);
+  private_nh_.param("draw_tree_delay", draw_tree_delay_, 100);
+  private_nh_.param<std::string>("map_topic", map_topic_, "/map");
+  private_nh_.param<std::string>("init_pose_topic", init_pose_topic_, "/initialpose");
+  private_nh_.param<std::string>("goal_topic", goal_topic_, "/move_base_simple/goal");
+  private_nh_.param<std::string>("path_topic", path_topic_, "/path");
+
   // Subscribe to map topic
-  map_sub_ = nh_->subscribe("map", 10, &RRTPlanner::mapCallback, this);
+  map_sub_ = nh_->subscribe(map_topic_, 10, &RRTPlanner::mapCallback, this);
   // Subscribe to initial pose topic that is published by RViz
-  init_pose_sub_ = nh_->subscribe("initialpose", 10, &RRTPlanner::initPoseCallback, this);
+  init_pose_sub_ = nh_->subscribe(init_pose_topic_, 10, &RRTPlanner::initPoseCallback, this);
   // Subscribe to goal topic that is published by RViz
-  goal_sub_ = nh_->subscribe("move_base_simple/goal", 10, &RRTPlanner::goalCallback, this);
+  goal_sub_ = nh_->subscribe(goal_topic_, 10, &RRTPlanner::goalCallback, this);
   // Advertise topic where calculated path is going to be published
-  path_pub_ = nh_->advertise<nav_msgs::Path>("path", 10);
+  path_pub_ = nh_->advertise<nav_msgs::Path>(path_topic_, 10);
   // This loops until the node is running, will exit when the node is killed
 }
 
@@ -79,7 +88,7 @@ void RRTPlanner::plan()
     	if (map_received_ && goal_received_ && init_pose_received_) {
 			buildMapImage();
             if (!planning_complete) {
-              createTree(2000, 30, 40);
+              createTree(max_iterations_, step_size_, threshold_distance_);
               planning_complete = true;
             }
   		}
@@ -205,7 +214,7 @@ void RRTPlanner::createTree(int max_iterations, int step_size, int threshold_dis
       if (euclideanDistance(new_point, goal_) <= threshold_distance) {
              ROS_INFO("Path to goal has been found");
              drawLine(new_point, goal_, cv::Scalar(255, 0, 0));
-             displayMapImage(100);
+             displayMapImage(draw_tree_delay_);
              int current_index = tree_.size() - 1;
              path_indices_ = getPathIndices(current_index);
              path_ = getPath(path_indices_);
